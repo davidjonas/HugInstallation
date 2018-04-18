@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<Calibrate>
+	<Threshold>34.425</Threshold>
+	<Blur_Amount>9</Blur_Amount>
+	<Blur>0</Blur>
+	<Minimum_Depth>7.65</Minimum_Depth>
+	<Maximum_Depth>151.725</Maximum_Depth>
+	<Capture_Background>0</Capture_Background>
+	<Show_all>1</Show_all>
+	<Track_Color>0</Track_Color>
+	<Minimum_Blob_Area>4608</Minimum_Blob_Area>
+	<Edge_Threshold>25</Edge_Threshold>
+	<Tracker_tolerance>277.05</Tracker_tolerance>
+</Calibrate>

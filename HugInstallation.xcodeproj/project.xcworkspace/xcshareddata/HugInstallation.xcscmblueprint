@@ -1,0 +1,51 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "2DE9C8846D9375EAACFABA8963120E8E7719BAF5",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "1CD93CCCAFF8D23071E049A446EE0AFC3B45F8DD" : 9223372036854775807,
+    "CA29DB320F881B85D76220FC5498A4D1FA4F037C" : 9223372036854775807,
+    "2DE9C8846D9375EAACFABA8963120E8E7719BAF5" : 9223372036854775807,
+    "6C5CE855D592290D8584EAEB116D99F1C9FBD24A" : 9223372036854775807,
+    "363F03AFEA2D7EEAB79476A26426EA95A67F33F2" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "AF6DD9A3-EF72-4DB7-B140-1CB15DEA2F16",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "1CD93CCCAFF8D23071E049A446EE0AFC3B45F8DD" : "openFrameworks\/addons\/ofxKinectTracker\/",
+    "CA29DB320F881B85D76220FC5498A4D1FA4F037C" : "openFrameworks\/addons\/ofxIO\/",
+    "2DE9C8846D9375EAACFABA8963120E8E7719BAF5" : "openFrameworks\/",
+    "6C5CE855D592290D8584EAEB116D99F1C9FBD24A" : "openFrameworks\/addons\/ofxArtnetProtocol\/",
+    "363F03AFEA2D7EEAB79476A26426EA95A67F33F2" : "openFrameworks\/addons\/ofxSerial\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "HugInstallation",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "apps\/myApps\/HugInstallation\/HugInstallation.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:davidjonas\/ofxKinectTracker.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "1CD93CCCAFF8D23071E049A446EE0AFC3B45F8DD"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:openframeworks\/openFrameworks.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "2DE9C8846D9375EAACFABA8963120E8E7719BAF5"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:bakercp\/ofxSerial.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "363F03AFEA2D7EEAB79476A26426EA95A67F33F2"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:davidjonas\/ofxArtnetProtocol.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "6C5CE855D592290D8584EAEB116D99F1C9FBD24A"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:bakercp\/ofxIO.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "CA29DB320F881B85D76220FC5498A4D1FA4F037C"
+    }
+  ]
+}
