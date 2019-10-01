@@ -3,7 +3,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	tracker.init(0);
+	tracker.init();
 	positiveSamples = true;
 	capturing = false;
 	finding = false;
@@ -13,7 +13,18 @@ void ofApp::setup(){
 	frameTester.allocate(tracker.getWidth(), tracker.getHeight(), OF_IMAGE_GRAYSCALE);
 	infoFile.open("info.dat",ofFile::Append);
 	bgFile.open("bg.txt",ofFile::Append);
-	setupGUI();
+	stage = IDLE;
+
+	currentSymphony = 0;
+	symphonies.push_back({0,2,7,8});
+	symphonySpeeds.push_back(10);
+
+	symphonies.push_back({6, 7});
+	symphonySpeeds.push_back(20);
+
+	HugTimer = 0;
+	symphonyTimer = 0;
+
 
 	for(size_t i=0; i<tm.getAvailableDevices().size(); i++)
 	{
@@ -35,15 +46,21 @@ void ofApp::setup(){
 
 	//LIGHTS
 	lights.connect("192.168.0.254");
+	//lights.addFixtures(1, 4, 48);
 	lights.addFixtures(12, 4, 0);
+	lights.setFixtureChannel(0, 48);
+	lights.setEffects(true);
 	lights.start();
-	lights.blackOut();
+	//lights.blackOut();
+	//lights.whiteOut();
 	numPeople = 0;
+
+	setupGUI();
 }
 
 void ofApp::setupGUI()
 {
-	guiActive = true;
+	guiActive = false;
 	calibrateGui.setup("Calibrate", "calibrate.xml", ofGetWindowWidth()-220, 10);
 	calibrateGui.add(threshold.setup("Threshold", 5, 0.0, 255.0));
 	calibrateGui.add(blurAmount.setup("Blur Amount", 9.0, 0.0, 100.0));
@@ -53,13 +70,15 @@ void ofApp::setupGUI()
 	calibrateGui.add(minBlobSize.setup("Minimum Blob Area", 100.0, 0.0, (tracker.getWidth()*tracker.getHeight())/2));
 	calibrateGui.add(edgeThreshold.setup("Edge Threshold", 10.0, 0.0, 100.0));
 	calibrateGui.add(tolerance.setup("Tracker tolerance", 50.0, 10.0, 500.0));
+	calibrateGui.add(kinect1.setup("K1 position", ofVec2f(k1Pos.x, k1Pos.y), ofVec2f(k1Pos.x-200.0, k1Pos.x-100.0), ofVec2f(k1Pos.x+200.0, k1Pos.x+200.0)));
+	calibrateGui.add(kinect2.setup("K2 position", ofVec2f(k2Pos.x, k2Pos.y), ofVec2f(k2Pos.x-200.0, k2Pos.x-100.0), ofVec2f(k2Pos.x+200.0, k2Pos.x+200.0)));
 	calibrateGui.add(captureBackground.setup("Capture Background", false));
 	calibrateGui.add(trackColor.setup("Track Color", false));
 	calibrateGui.add(showAll.setup("Show all", false));
 
 	calibrateGui.loadFromFile("calibrate.xml");
 
-	effectsGui.setup("Effects", "effects.xml", ofGetWindowWidth()-220, 250);
+	effectsGui.setup("Effects", "effects.xml", ofGetWindowWidth()-220, 400);
 	effectsGui.add(speed.setup("Speed", 1.0, 0.0, 20.0));
 	effectsGui.add(backgroundSpeed.setup("Background Speed", 1.0, 0.0, 20.0));
 
@@ -75,34 +94,47 @@ void ofApp::drawGUI() {
 }
 
 void ofApp::updateGUI() {
-	if(guiActive)
+	tracker.setThreshold(threshold);
+	tracker.setBlurAmount(blurAmount);
+	tracker.setBlur(blur);
+	tracker.setMinDepth(minDepth);
+	tracker.setMaxDepth(maxDepth);
+	tracker.setMinBlobSize(minBlobSize);
+	tracker.setEdgeThreshold(edgeThreshold);
+	tracker.setTolerance(tolerance);
+
+	if(trackColor && tracker.getMode() == TRACK_DEPTH)
 	{
-		tracker.setThreshold(threshold);
-		tracker.setBlurAmount(blurAmount);
-		tracker.setBlur(blur);
-		tracker.setMinDepth(minDepth);
-		tracker.setMaxDepth(maxDepth);
-		tracker.setMinBlobSize(minBlobSize);
-		tracker.setEdgeThreshold(edgeThreshold);
-		tracker.setTolerance(tolerance);
+		tracker.setMode(TRACK_COLOR);
+	}
 
-		if(trackColor && tracker.getMode() == TRACK_DEPTH)
-		{
-			tracker.setMode(TRACK_COLOR);
-		}
+	if(!trackColor && tracker.getMode() == TRACK_COLOR)
+	{
+		tracker.setMode(TRACK_DEPTH);
+	}
 
-		if(!trackColor && tracker.getMode() == TRACK_COLOR)
-		{
-			tracker.setMode(TRACK_DEPTH);
-		}
+	if(captureBackground){
+		captureBackground = false;
+		tracker.grabBackground();
+	}
 
-		if(captureBackground){
-			captureBackground = false;
-			tracker.grabBackground();
-		}
+	lights.speed = speed;
+	lights.backgroundSpeed = backgroundSpeed;
 
-		lights.speed = speed;
-		lights.backgroundSpeed = backgroundSpeed;
+	if(kinect1->x != k1Pos.x || kinect1->y != k1Pos.y)
+	{
+		k1Pos.x = kinect1->x;
+		k1Pos.y = kinect1->y;
+
+		tracker.calibratePosition(0, k1Pos);
+	}
+
+	if(kinect2->x != k2Pos.x || kinect2->y != k2Pos.y)
+	{
+		k2Pos.x = kinect2->x;
+		k2Pos.y = kinect2->y;
+
+		tracker.calibratePosition(1, k2Pos);
 	}
 }
 
@@ -151,7 +183,13 @@ void ofApp::update(){
 	updateGUI();
 	ofBackground(100,100,100);
 	tracker.update();
-	updateLights();
+	updateLights(); //TODO: Reactivate this.
+	//lights.setBackground(1);
+
+	if(ofGetElapsedTimef() > 20 && !tracker.getBackgroundSubtract())
+	{
+		tracker.grabBackground();
+	}
 
 	if(finding)
 	{
@@ -163,31 +201,73 @@ void ofApp::update(){
 void ofApp::updateLights()
 {
 	int bl = tracker.getNumActiveBlobs();
+	lights.clearEffects();
 
 	if(bl > 1)
 	{
+		lights.setBackground(10);
 		vector<ofxKinectBlob> blobs = tracker.getActiveBlobs();
+		lights.follow = blobs[0].blob.centroid;
 		distance = ofDist(blobs[0].blob.centroid.x, blobs[0].blob.centroid.y, blobs[1].blob.centroid.x, blobs[1].blob.centroid.y);
-		backgroundSpeed = ofMap(distance, 100.0, 300.0, 10.0, 3.0);
-		if(distance < 200)
+		float bgs = ofMap(distance, 300.0, 800.0, 20.0, 1.0);
+		if(abs(bgs - backgroundSpeed) > 1)
 		{
-			if(lights.getEffects().size() == 0)
-			{
-				lights.addEffect(0);
-			}
+			backgroundSpeed = bgs;
 		}
-	}
-	else if(bl == 0)
-	{
-		lights.clearEffects();
-		lights.setBackground(1);
-		backgroundSpeed = 3;
+		if(distance < 300)
+		{
+				lights.setEffects({0, 1, 4});
+		}
+		else
+		{
+				lights.addEffect(4);
+		}
 	}
 	else if(bl == 1)
 	{
-		lights.clearEffects();
-		lights.setBackground(5);
-		backgroundSpeed = 3;
+		vector<ofxKinectBlob> blobs = tracker.getActiveBlobs();
+		lights.follow = blobs[0].blob.centroid;
+		lights.setBackground(0);
+		lights.addEffect(4);
+	}
+	else{
+		lights.setBackground(-1);
+		lights.addEffect(-1);
+	}
+
+	if(bl > 0)
+	{
+		if(tracker.thereAreOverlaps())
+		{
+			currentSymphony = floor(ofRandom(0, symphonies.size()));
+			if(HugTimer == 0 && symphonyTimer == 0)
+			{
+				HugTimer = ofGetElapsedTimef();
+			}
+			else
+			{
+				if(HugTimer != 0 && ofGetElapsedTimef() > HugTimer + 3)
+				{
+					//HUGGED FOR 3 SECONDS Symphony starts
+					symphonyTimer = ofGetElapsedTimef();
+					HugTimer = 0;
+				}
+			}
+			lights.setEffects(symphonies[currentSymphony]);
+			speed = symphonySpeeds[currentSymphony];
+			lights.setBackground(0);
+		}
+
+		if(symphonyTimer != 0 && symphonyTimer < 15)
+		{
+			lights.setEffects(symphonies[currentSymphony]);
+			speed = symphonySpeeds[currentSymphony];
+			lights.setBackground(0);
+		}
+		else if(symphonyTimer > 15)
+		{
+			symphonyTimer = 0;
+		}
 	}
 }
 
@@ -309,6 +389,15 @@ void ofApp::draw(){
 		}
 		ofDrawBitmapString(effects, 50, ofGetWindowHeight() - 20);
 	}
+
+	if(!tracker.getBackgroundSubtract())
+	{
+		ofSetColor(255,0,0);
+		ofNoFill();
+		ofDrawRectangle(ofGetWindowWidth()/2-200, ofGetWindowHeight()/2-50, 400, 100);
+		ofDrawBitmapString("DO NOT ENTER!", ofGetWindowWidth()/2-50, ofGetWindowHeight()/2-5);
+		ofDrawBitmapString("NO ENTRAR!", ofGetWindowWidth()/2-50, ofGetWindowHeight()/2+8);
+	}
 }
 
 void ofApp::saveSample(ofxKinectBlob blob){
@@ -351,49 +440,49 @@ void ofApp::keyPressed(int key){
 		case '\t':
       guiActive = !guiActive;
       break;
-		//case OF_KEY_RETURN:
+		// case OF_KEY_RETURN:
 				//if(prepareData()) trainCascade();
 				//break;
 
-		case OF_KEY_DOWN:
-			k1Pos.y -= 1;
-			tracker.calibratePosition(0, k1Pos);
-			break;
-
-		case OF_KEY_UP:
-			k1Pos.y += 1;
-			tracker.calibratePosition(0, k1Pos);
-			break;
-
-		case OF_KEY_LEFT:
-			k1Pos.x -= 1;
-			tracker.calibratePosition(0, k1Pos);
-			break;
-
-		case OF_KEY_RIGHT:
-			k1Pos.x += 1;
-			tracker.calibratePosition(0, k1Pos);
-			break;
-
-		case 's':
-			k2Pos.y -= 1;
-			tracker.calibratePosition(1, k2Pos);
-			break;
-
-		case 'w':
-			k2Pos.y += 1;
-			tracker.calibratePosition(1, k2Pos);
-			break;
-
-		case 'a':
-			k2Pos.x -= 1;
-			tracker.calibratePosition(1, k2Pos);
-			break;
-
-		case 'd':
-			k2Pos.x += 1;
-			tracker.calibratePosition(1, k2Pos);
-			break;
+		// case OF_KEY_DOWN:
+		// 	k1Pos.y -= 1;
+		// 	tracker.calibratePosition(0, k1Pos);
+		// 	break;
+		//
+		// case OF_KEY_UP:
+		// 	k1Pos.y += 1;
+		// 	tracker.calibratePosition(0, k1Pos);
+		// 	break;
+		//
+		// case OF_KEY_LEFT:
+		// 	k1Pos.x -= 1;
+		// 	tracker.calibratePosition(0, k1Pos);
+		// 	break;
+		//
+		// case OF_KEY_RIGHT:
+		// 	k1Pos.x += 1;
+		// 	tracker.calibratePosition(0, k1Pos);
+		// 	break;
+		//
+		// case 's':
+		// 	k2Pos.y -= 1;
+		// 	tracker.calibratePosition(1, k2Pos);
+		// 	break;
+		//
+		// case 'w':
+		// 	k2Pos.y += 1;
+		// 	tracker.calibratePosition(1, k2Pos);
+		// 	break;
+		//
+		// case 'a':
+		// 	k2Pos.x -= 1;
+		// 	tracker.calibratePosition(1, k2Pos);
+		// 	break;
+		//
+		// case 'd':
+		// 	k2Pos.x += 1;
+		// 	tracker.calibratePosition(1, k2Pos);
+		// 	break;
 	}
 
 	int bg = 0;
@@ -402,11 +491,15 @@ void ofApp::keyPressed(int key){
 		case '-':
 			lights.clearEffects();
 			break;
-		case '1':
+		case '2':
 			bg = lights.getBackground() == 10 ? 0 : lights.getBackground() + 1;
 			lights.setBackground(bg);
 			break;
-		case '2':
+		case '1':
+			bg = lights.getBackground() == 0 ? 10 : lights.getBackground() - 1;
+			lights.setBackground(bg);
+			break;
+		case '0':
 			lights.addEffect(currentEffect);
 			if(++currentEffect == 10)
 			{

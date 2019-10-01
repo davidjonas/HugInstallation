@@ -9,10 +9,11 @@ LightController::LightController()
   interval = 40; //Defaults to 25 fps (1000 ms / 25 frames);
   blackOut();
   background = 0;
-  stage = IDLE;
   effectsOn = true;
   speed = 1.0;
   backgroundSpeed = 1.0;
+  follow = ofVec2f(0,0);
+  followSmooth = ofVec2f(0,0);
 }
 
 LightController::~LightController()
@@ -28,6 +29,16 @@ bool LightController::connect(string ip_address){
 }
 
 void LightController::update(){
+
+  float diff = follow.x - followSmooth.x;
+  if(diff >= 50)
+  {
+    followSmooth.x+=50;
+  }else if(diff <= -50)
+  {
+    followSmooth.x-=50;
+  }
+
   if(effectsOn)
   {
     applyBackground();
@@ -58,9 +69,18 @@ void LightController::updateThread()
   }
 }
 
+void  LightController::blackOutFixtures()
+{
+  for(uint8_t f=0; f<fixtures.size(); f++)
+  {
+    fixtures[f].setAll(0, SOLO);
+  }
+}
+
 void LightController::blackOut(){
   clearEffects();
   background = 0;
+  effectsOn = false;
 
   for(uint8_t f=0; f<fixtures.size(); f++)
   {
@@ -74,9 +94,24 @@ void LightController::blackOut(){
 }
 
 void LightController::whiteOut(){
+  clearEffects();
+  effectsOn = false;
+
+  for(uint8_t f=0; f<fixtures.size(); f++)
+  {
+    fixtures[f].setAll(255, SOLO);
+  }
+
   for(int i=0; i<sizeof(universe); i++)
   {
     universe[i] = 255;
+  }
+}
+
+void LightController::whiteOutFixtures(){
+  for(uint8_t f=0; f<fixtures.size(); f++)
+  {
+    fixtures[f].setAll(255, SOLO);
   }
 }
 
@@ -84,7 +119,7 @@ void LightController::setAllFixtures(vector<uint8_t> values, BlendMode b)
 {
   for(uint8_t i=0; i<numFixtures(); i++)
   {
-    setFixture(i, values);
+    setFixture(i, values, b);
   }
 }
 
@@ -100,6 +135,11 @@ void LightController::addFixtures(int how_many, int channels_per_fixture, int st
       ofLogError("LightController") << "Fixture does not fit in the universe.";
     }
   }
+}
+
+void LightController::setFixtureChannel(int index, uint8_t channel)
+{
+  fixtures[index].setChannel(channel);
 }
 
 uint8_t LightController::numFixtures(){
@@ -207,6 +247,13 @@ void LightController::addEffect(int eff){
   effects.push_back(eff);
 }
 
+void LightController::addEffects(vector<int> eff){
+  for(uint8_t i=0; i<eff.size(); i++)
+  {
+    effects.push_back(eff[i]);
+  }
+}
+
 void LightController::clearEffects(){
   effects.clear();
 }
@@ -246,8 +293,8 @@ void LightController::applyBackground(){
       //========================IDLE=============================
       //All ON at 20% power
       //MODE = SOLO;
-      multiplier = 0.2;
-      setAllFixtures({(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+      multiplier = 1;
+      setAllFixtures({(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
       break;
 
     case 2:
@@ -259,7 +306,7 @@ void LightController::applyBackground(){
       {
         if(i<6)
         {
-          setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+          setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
         }
         else{
           setFixture(i, {0,0,0,0});
@@ -267,7 +314,7 @@ void LightController::applyBackground(){
       }
       break;
 
-    case 3:
+    case 4:
       //========================SUPER LOW IDLE=============================
       //Fixtures 7 to 10 ON at 20% power all others OFF
       //MODE = SOLO;
@@ -280,12 +327,12 @@ void LightController::applyBackground(){
 
         }
         else{
-          setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+          setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
         }
       }
       break;
 
-    case 4:
+    case 3:
       //========================DIAGONAL IDLE=============================
       //Fixtures 11 and 12 ON at 20% power all others OFF
       //MODE = SOLO;
@@ -293,8 +340,8 @@ void LightController::applyBackground(){
       setAllFixtures({0,0,0,0});
 
       multiplier = 0.2;
-      setFixture(10, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
-      setFixture(11, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+      setFixture(10, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
+      setFixture(11, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
       break;
 
     case 5:
@@ -304,7 +351,7 @@ void LightController::applyBackground(){
       for(uint8_t i=0; i<numFixtures(); i++)
       {
         multiplier = ((cos((animation + i * 50)/20.0)/4) + 0.75) * 0.2;
-        setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+        setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
       }
       break;
 
@@ -317,7 +364,7 @@ void LightController::applyBackground(){
         if(i<6)
         {
           multiplier = ((cos(((animation * backgroundSpeed) + i * 50)/20.0)/4) + 0.75) * 0.2;
-          setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+          setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
         }
         else{
           setFixture(i, {0,0,0,0});
@@ -337,8 +384,8 @@ void LightController::applyBackground(){
           setFixture(i, {0,0,0,0});
         }
         else{
-          multiplier = ((cos(((animation * backgroundSpeed * 10) + i * 50)/20.0)/4) + 0.75) * 0.2;
-          setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+          multiplier = ((cos(((animation * backgroundSpeed * 10) + i * 50)/200.0)/4) + 0.75) * 0.2;
+          setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
         }
       }
       break;
@@ -351,7 +398,7 @@ void LightController::applyBackground(){
       for(uint8_t i=10; i<12; i++)
       {
         multiplier = ((cos(((animation * backgroundSpeed * 10) + i * 50)/20.0)/4) + 0.75) * 0.2;
-        setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+        setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
       }
       break;
 
@@ -364,21 +411,24 @@ void LightController::applyBackground(){
         if(i%2 == 0) multiplier = (sin(((animation * backgroundSpeed) + i * 135.890)/20.0));
         else multiplier = (cos(((animation * backgroundSpeed) + i * 100.20)/30.0));
         if(multiplier < 0) multiplier = 0;
-        setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+        setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
       }
       break;
 
     case 10:
-      //========================BREATH=============================
+      //========================BREATH DIAGONAL=============================
       //A full range waving of all fixtures, to create an organic breathing ambient
       //MODE = SOLO;
-      for(uint8_t i=0; i<numFixtures(); i++)
+      setAllFixtures({0,0,0,0});
+      for(uint8_t i=10; i<numFixtures(); i++)
       {
         multiplier = ((cos(((animation * backgroundSpeed))/20.0)/4) + 0.75) * 0.7;
-        setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)});
+        setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)});
       }
       break;
     }
+
+
 }
 
 void LightController::applyEffects()
@@ -387,6 +437,13 @@ void LightController::applyEffects()
   {
     //===========================================================EFFECTS==================================================================
     switch (effects[i]) {
+      case -1:
+        //========================FADE OUT=============================
+        //All OFF FADE
+        //MODE = SUB;
+        setAllFixtures({5,5,5,5},SUB);
+        break;
+
       case 0:
         //=======================FLASH GLITCH===========================
         //Random flashing of lights to create tension
@@ -394,7 +451,7 @@ void LightController::applyEffects()
         multiplier = 1;
         if(animation % 3 == 0 && rand() % 100 + 1 > 80)
   			{
-  				setFixture(floor(ofRandom(0, numFixtures()+1)), {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, ADD);
+  				setFixture(floor(ofRandom(0, numFixtures()+1)), {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
   			}
         break;
 
@@ -405,7 +462,7 @@ void LightController::applyEffects()
           multiplier = 1;
           if(animation % 3 == 0 && rand() % 100 + 1 > 80)
           {
-            setFixture(floor(ofRandom(0, numFixtures()+1)), {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, SUB);
+            setFixture(floor(ofRandom(0, numFixtures()+1)), {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, SUB);
           }
           break;
 
@@ -420,7 +477,7 @@ void LightController::applyEffects()
   				multiplier = ofMap(abs(i-position), 0.0f, 3.0f, 1.0f, 0.0f);
   				if(multiplier < 0) multiplier = 0;
   				if(multiplier > 1) multiplier = 1;
-  				setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, ADD);
+  				setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
   			}
         break;
 
@@ -435,15 +492,36 @@ void LightController::applyEffects()
             multiplier = ofMap(abs(i-position), 0.0f, 3.0f, 1.0f, 0.0f);
             if(multiplier < 0) multiplier = 0;
             if(multiplier > 1) multiplier = 1;
-            setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, ADD);
+            setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
           }
           break;
       case 4:
-          //=======================ROOM ROTATE===========================
-          //Uses fixtures 11 and 12 alternated with 2 and 4 and 7 and 9 to create the ilusion of rotation in the room; Use fast;
+          //=======================FOLLOW===========================
+          //Follows a blob in space
           //MODE = ADD;
+          position = ofMap(followSmooth.x, 0.0, 1280.0, 6, 0);
+          for(uint8_t i=0; i<6; i++)
+          {
+            multiplier = ofMap(abs(i-position), 0.0f, 2.0f, 1.0f, 0.0f);
+            if(multiplier < 0) multiplier = 0;
+            if(multiplier > 1) multiplier = 1;
+            setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
+          }
           break;
       case 5:
+          //=======================ESCAPE===========================
+          //Escapes a blob in space
+          //MODE = ADD;
+          position = ofMap(followSmooth.x, 50.0, 1000.0, 5, 0);
+          for(uint8_t i=0; i<6; i++)
+          {
+            multiplier = ofMap(abs(i-position), 0.0f, 4.0f, 0.0f, 1.0f);
+            if(multiplier < 0) multiplier = 0;
+            if(multiplier > 1) multiplier = 1;
+            setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
+          }
+          break;
+      case 6:
           //=======================ORDERED LOOP===========================
           //Uses the cached value loopOrder to light up the fixtures in order, fading through them.
           //MODE = ADD;
@@ -454,20 +532,20 @@ void LightController::applyEffects()
     				multiplier = ofMap(abs(i-position), 0.0f, 3.0f, 1.0f, 0.0f);
     				if(multiplier < 0) multiplier = 0;
     				if(multiplier > 1) multiplier = 1;
-    				setFixture(loopOrder[i], {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, ADD);
+    				setFixture(loopOrder[i], {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
     			}
           break;
-      case 6:
+      case 7:
           //=======================FULL RANDOM FLASH===========================
           //All fixtures flash at the same time;
           //MODE = ADD;
           multiplier = 1;
           if(animation % 3 == 0 && rand() % 100 + 1 > 98)
     			{
-    				setAllFixtures({(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, ADD);
+    				setAllFixtures({(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
     			}
           break;
-      case 7:
+      case 8:
           //=======================HALF RANDOM FLASH===========================
           //Flashes fixtures [1-6] or [7-10]
           //MODE = ADD;
@@ -478,28 +556,17 @@ void LightController::applyEffects()
             {
               for(uint8_t i=6; i<10; i++)
               {
-        				setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, ADD);
+        				setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
               }
             }
             else
             {
               for(uint8_t i=0; i<6; i++)
               {
-        				setFixture(i, {(uint8_t)floor(0*multiplier), (uint8_t)floor(106*multiplier), (uint8_t)floor(85*multiplier), (uint8_t)floor(255*multiplier)}, ADD);
+        				setFixture(i, {(uint8_t)floor(red*multiplier), (uint8_t)floor(green*multiplier), (uint8_t)floor(blue*multiplier), (uint8_t)floor(white*multiplier)}, ADD);
               }
             }
     			}
-          break;
-          break;
-      case 8:
-          //=======================MIDDLE SWIPE LOW===========================
-          //Swipes from the middle of [1-6] (3) twards 0
-          //MODE = ADD;
-          break;
-      case 9:
-          //=======================MIDDLE SWIPE HIGH===========================
-          //Swipes from the middle of [1-6] (3) twards 6
-          //MODE = ADD;
           break;
     }
   }

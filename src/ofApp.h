@@ -14,6 +14,7 @@ public:
     void setup();
     void update();
     void updateLights();
+    void handleStage();
     void draw();
     void keyPressed(int key);
     void keyReleased(int key);
@@ -54,6 +55,8 @@ public:
     ofxToggle captureBackground;
     ofxToggle showAll;
     ofxToggle trackColor;
+    ofxVec2Slider kinect1;
+    ofxVec2Slider kinect2;
 
     ofxPanel effectsGui;
     ofxFloatSlider speed;
@@ -80,6 +83,12 @@ public:
     int debugKey;
     int currentEffect = 0;
     float distance = 0;
+    Stage stage;
+    float symphonyTimer;
+    float HugTimer;
+    int currentSymphony;
+    vector<vector<int>> symphonies;
+    vector<int> symphonySpeeds;
 
     //calibration
     ofPoint k1Pos;

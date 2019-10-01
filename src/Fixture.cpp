@@ -16,7 +16,7 @@ Fixture::~Fixture(){
 }
 
 void Fixture::update(){
-  //...
+  //... Not Necessary
 }
 
 bool Fixture::hasChanged(){
@@ -36,6 +36,11 @@ uint8_t Fixture::getNumChannels(){
 
 uint8_t Fixture::getChannel(){
   return channel;
+}
+
+void Fixture::setChannel(uint8_t channel)
+{
+  this->channel = channel;
 }
 
 uint8_t Fixture::get(uint8_t channel){

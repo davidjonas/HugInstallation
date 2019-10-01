@@ -18,6 +18,7 @@ class Fixture {
     uint8_t getNumChannels();
     uint8_t getChannel();
     uint8_t get(uint8_t channel);
+    void setChannel(uint8_t channel);
     void set(uint8_t channel, uint8_t value, BlendMode b);
     void set(std::vector<uint8_t> values, BlendMode b);
     void setAll(uint8_t value, BlendMode b);
